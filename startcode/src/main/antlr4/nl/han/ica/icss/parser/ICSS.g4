@@ -42,8 +42,46 @@ MUL: '*';
 ASSIGNMENT_OPERATOR: ':=';
 
 
-
-
 //--- PARSER: ---
-stylesheet: EOF;
+stylesheet: styleRule* variableDeclaration* styleRule*|variableDeclaration* ;
+
+styleRule: tagselector OPEN_BRACE styleOption* CLOSE_BRACE ;
+tagselector: ID_IDENT | CLASS_IDENT | LOWER_IDENT;
+
+styleOption
+    : property COLON propertyValue SEMICOLON
+    | ifStatement
+    ;
+
+propertyValue: COLOR | PIXELSIZE | PERCENTAGE | variableName | calculation;
+
+property: 'color' | 'background-color' | 'width' | 'height';
+
+variableDeclaration: variableName ASSIGNMENT_OPERATOR variableValue SEMICOLON;
+variableName: CAPITAL_IDENT;
+variableValue: TRUE | FALSE | PIXELSIZE | COLOR ;
+
+calculation
+    : expression
+    ;
+
+expression
+    : expression MUL expression
+    | expression (PLUS | MIN) expression
+    | types
+    ;
+
+types
+    : PIXELSIZE
+    | PERCENTAGE
+    | SCALAR
+    | variableName
+    | '(' expression ')'
+    ;
+
+ifStatement: IF BOX_BRACKET_OPEN ifExpression BOX_BRACKET_CLOSE OPEN_BRACE styleOption* CLOSE_BRACE elseStatement?;
+elseStatement: ELSE OPEN_BRACE styleOption CLOSE_BRACE;
+ifExpression: variableName ;
+
+
 
