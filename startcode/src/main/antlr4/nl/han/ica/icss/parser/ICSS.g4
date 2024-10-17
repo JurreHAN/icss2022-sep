@@ -43,27 +43,23 @@ ASSIGNMENT_OPERATOR: ':=';
 
 
 //--- PARSER: ---
-stylesheet: styleRule* variableDeclaration* styleRule*|variableDeclaration* ;
+stylesheet: (styleRule | variableAssignment)*;
 
 styleRule: tagselector OPEN_BRACE styleOption* CLOSE_BRACE ;
 tagselector: ID_IDENT | CLASS_IDENT | LOWER_IDENT;
 
-styleOption
-    : property COLON propertyValue SEMICOLON
-    | ifStatement
-    ;
+declaration: property COLON propertyValue SEMICOLON;
 
-propertyValue: COLOR | PIXELSIZE | PERCENTAGE | variableName | calculation;
+styleOption : declaration | ifClause ;
+
+propertyValue: literalValue | variableReference | expression;
 
 property: 'color' | 'background-color' | 'width' | 'height';
 
-variableDeclaration: variableName ASSIGNMENT_OPERATOR variableValue SEMICOLON;
-variableName: CAPITAL_IDENT;
-variableValue: TRUE | FALSE | PIXELSIZE | COLOR ;
+variableAssignment: variableReference ASSIGNMENT_OPERATOR literalValue SEMICOLON;
+variableReference: CAPITAL_IDENT;
 
-calculation
-    : expression
-    ;
+literalValue: TRUE | FALSE | PIXELSIZE | COLOR | PERCENTAGE | SCALAR;
 
 expression
     : expression MUL expression
@@ -72,16 +68,13 @@ expression
     ;
 
 types
-    : PIXELSIZE
-    | PERCENTAGE
-    | SCALAR
-    | variableName
-    | '(' expression ')'
+    : literalValue
+    | variableReference
     ;
 
-ifStatement: IF BOX_BRACKET_OPEN ifExpression BOX_BRACKET_CLOSE OPEN_BRACE styleOption* CLOSE_BRACE elseStatement?;
-elseStatement: ELSE OPEN_BRACE styleOption CLOSE_BRACE;
-ifExpression: variableName ;
+ifClause: IF BOX_BRACKET_OPEN ifExpression BOX_BRACKET_CLOSE OPEN_BRACE styleOption* CLOSE_BRACE elseClause?;
+elseClause: ELSE OPEN_BRACE styleOption CLOSE_BRACE;
+ifExpression: variableReference ;
 
 
 
