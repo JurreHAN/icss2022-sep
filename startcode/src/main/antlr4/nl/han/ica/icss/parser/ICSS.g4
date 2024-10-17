@@ -50,7 +50,7 @@ tagselector: ID_IDENT | CLASS_IDENT | LOWER_IDENT;
 
 declaration: property COLON propertyValue SEMICOLON;
 
-styleOption : declaration | ifClause ;
+styleOption : declaration | variableAssignment | ifClause ;
 
 propertyValue: literalValue | variableReference | expression;
 
@@ -74,7 +74,8 @@ types
 
 ifClause: IF BOX_BRACKET_OPEN ifExpression BOX_BRACKET_CLOSE OPEN_BRACE styleOption* CLOSE_BRACE elseClause?;
 elseClause: ELSE OPEN_BRACE styleOption CLOSE_BRACE;
-ifExpression: variableReference ;
+ifExpression: variableReference | booleanValue;
+booleanValue : TRUE | FALSE;
 
 
 

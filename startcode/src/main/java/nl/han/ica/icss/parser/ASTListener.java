@@ -172,5 +172,9 @@ public class ASTListener extends ICSSBaseListener {
 	@Override public void enterIfExpression(ICSSParser.IfExpressionContext ctx) { }
 	@Override public void exitIfExpression(ICSSParser.IfExpressionContext ctx) { }
 
+	@Override public void enterBooleanValue(ICSSParser.BooleanValueContext ctx) {
+		BoolLiteral boolLiteral = new BoolLiteral(ctx.getText());
+		currentContainer.peek().addChild(boolLiteral);
+	}
 
 }
