@@ -5,6 +5,9 @@ import nl.han.ica.datastructures.HANLinkedList;
 import nl.han.ica.datastructures.IHANLinkedList;
 import nl.han.ica.icss.ast.*;
 import nl.han.ica.icss.ast.literals.*;
+import nl.han.ica.icss.ast.operations.AddOperation;
+import nl.han.ica.icss.ast.operations.MultiplyOperation;
+import nl.han.ica.icss.ast.operations.SubtractOperation;
 import nl.han.ica.icss.ast.types.ExpressionType;
 
 import java.util.HashMap;
@@ -50,11 +53,13 @@ public class Checker {
                     VariableReference variableReference = (VariableReference) expression;
                     ExpressionType variableType = getExpressionTypeFromVariableReference(variableReference);
                     if (variableType != ExpressionType.PIXEL && variableType != ExpressionType.PERCENTAGE && variableType != ExpressionType.SCALAR) {
-                        ((Declaration) node).expression.setError("Variable in width / height must be a pixel or scalar literal");
+                        ((Declaration) node).property.setError("Variable in width / height must be a pixel or scalar literal");
                     }
-                }
-                else if (!(expression instanceof PixelLiteral) && !(expression instanceof Percentage) && !(expression instanceof Operation)) {
-                    ((Declaration) node).expression.setError("Width and height must be a pixel or percentage literal");
+                }else {
+                    ExpressionType expressionType = getExpressionType(expression);
+                    if (expressionType != ExpressionType.PIXEL && expressionType != ExpressionType.PERCENTAGE) {
+                        ((Declaration) node).property.setError("Width and height must be a pixel or percentage literal");
+                    }
                 }
             }
             if (propertyName.name.equals("color") || propertyName.name.equals("background-color")) {
@@ -62,11 +67,13 @@ public class Checker {
                     VariableReference variableReference = (VariableReference) expression;
                     ExpressionType variableType = getExpressionTypeFromVariableReference(variableReference);
                     if (variableType != ExpressionType.COLOR) {
-                        ((Declaration) node).expression.setError("Variable in color / background-color must be a color literal");
+                        ((Declaration) node).property.setError("Variable in color / background-color must be a color literal");
                     }
-                }
-                else if (!(expression instanceof ColorLiteral) && !(expression instanceof Operation)) {
-                    ((Declaration) node).expression.setError("Color and background-color must be a color literal");
+                }else {
+                    ExpressionType expressionType = getExpressionType(expression);
+                    if (expressionType != ExpressionType.COLOR) {
+                        ((Declaration) node).property.setError("Color and background-color must be a color literal");
+                    }
                 }
             }
         }
@@ -76,17 +83,32 @@ public class Checker {
         if(variable instanceof VariableAssignment) {
             VariableAssignment variableAssignment = (VariableAssignment) variable;
             if (variableAssignment.expression != null) {
-                ExpressionType expression = getExpressionType(variableAssignment.expression);
-                variableTypes.getFirst().put(variableAssignment.name.name, expression);
+                ExpressionType expressionType = getExpressionType(variableAssignment.expression);
+                if(variableExistsWithOtherType(variableAssignment.name.name, expressionType)){
+                    variableAssignment.setError("Variabele bestaat al met een andere type");
+                }else{
+                    variableTypes.getFirst().put(variableAssignment.name.name, expressionType);
+                }
             }
         }
         if(variable instanceof VariableReference) {
             VariableReference variableReference = (VariableReference) variable;
-            ExpressionType expression = getExpressionTypeFromVariableReference(variableReference);
-            if (expression == ExpressionType.UNDEFINED) {
+            ExpressionType expressionType = getExpressionTypeFromVariableReference(variableReference);
+            if (expressionType == ExpressionType.UNDEFINED) {
                 variable.setError("Variabele bestaat niet");
             }
         }
+    }
+
+    private boolean variableExistsWithOtherType(String name, ExpressionType expressionType) {
+        for (int i = 0; i < variableTypes.getSize(); i++){
+            if(variableTypes.get(i).containsKey(name) && variableTypes.get(i).get(name) != expressionType) {
+                return true;
+            }else{
+                return false;
+            }
+        }
+        return false;
     }
 
     private ExpressionType getExpressionTypeFromVariableReference(VariableReference variableReference){
@@ -101,6 +123,56 @@ public class Checker {
     }
 
     private ExpressionType getExpressionType(Expression expression) {
+        if(expression instanceof Literal) {
+            return getExpressionTypeFromLiteral((Literal) expression);
+        } else if (expression instanceof Operation) {
+            return getExpressionTypeOperation((Operation) expression);
+        } else if (expression instanceof VariableReference) {
+            return getExpressionTypeFromVariableReference((VariableReference) expression);
+        }else{
+            return ExpressionType.UNDEFINED;
+        }
+    }
+
+    private ExpressionType getExpressionTypeOperation(Operation expression) {
+
+        Operation operation = (Operation) expression;
+        ExpressionType left = getExpressionType(operation.lhs);
+        ExpressionType right = getExpressionType(operation.rhs);
+
+        if(left.equals(ExpressionType.COLOR) || right.equals(ExpressionType.COLOR)){
+            operation.setError("Een van de waarden van de operatie mag is een kleur, dit mag niet");
+            return ExpressionType.UNDEFINED;
+        }
+
+        if(operation instanceof AddOperation || operation instanceof SubtractOperation) {
+            if (left != right){
+                operation.setError("waarden van plus of min som moet van het gelijke type zijn");
+                return ExpressionType.UNDEFINED;
+            }
+        }
+
+        if (operation instanceof MultiplyOperation){
+            if(left != ExpressionType.SCALAR && right != ExpressionType.SCALAR){
+                operation.setError("minimaal 1 waarde van keer som moet van het type scalar zijn");
+                return ExpressionType.UNDEFINED;
+            }else{
+                if(left == ExpressionType.SCALAR){
+                    return right;
+                }else {
+                    return left;
+                }
+            }
+        }
+
+        if (left == right) {
+            return left;
+        } else {
+            return ExpressionType.UNDEFINED;
+        }
+    }
+
+    private ExpressionType getExpressionTypeFromLiteral(Literal expression) {
         if (expression instanceof PixelLiteral) {
             return ExpressionType.PIXEL;
         } else if (expression instanceof ColorLiteral) {
@@ -114,12 +186,6 @@ public class Checker {
         }else{
             return ExpressionType.UNDEFINED;
         }
-//        else if (expression instanceof VariableReference) {
-//            VariableReference variableReference = (VariableReference) expression;
-//            Expression newExpression = expression;
-//            return getExpressionType(newExpression);
-//        }
-
     }
 
     private void checkIfStatement(ASTNode node) {

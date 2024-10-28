@@ -41,6 +41,10 @@ MIN: '-';
 MUL: '*';
 ASSIGNMENT_OPERATOR: ':=';
 
+//skip comments
+COMMENT: '//' .*? [\n] -> skip;
+MULTILINE_COMMENT: '/*' .*? '*/' -> skip;
+
 
 //--- PARSER: ---
 stylesheet: (styleRule | variableAssignment)*;
@@ -56,7 +60,7 @@ propertyValue: literalValue | variableReference | expression;
 
 property: 'color' | 'background-color' | 'width' | 'height';
 
-variableAssignment: variableReference ASSIGNMENT_OPERATOR literalValue SEMICOLON;
+variableAssignment: variableReference ASSIGNMENT_OPERATOR propertyValue SEMICOLON;
 variableReference: CAPITAL_IDENT;
 
 literalValue: TRUE | FALSE | PIXELSIZE | COLOR | PERCENTAGE | SCALAR;
